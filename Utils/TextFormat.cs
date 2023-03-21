@@ -205,5 +205,22 @@ namespace JeffPires.VisualChatGPTStudio.Utils
 
             return html;
         }
+
+        public static string ExtractFirstComment(string code)
+        {
+            if (string.IsNullOrEmpty(code))
+            {
+                return null;
+            }
+
+            var singleLinePattern = @"//.*";
+            var multiLinePattern = @"/\*[\s\S]*?\*/";
+
+            var regex = new Regex($"{singleLinePattern}|{multiLinePattern}");
+
+            var match = regex.Match(code);
+
+            return match.Success ? match.Value : null;
+        }
     }
 }

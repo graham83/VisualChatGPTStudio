@@ -4,6 +4,8 @@ using JeffPires.VisualChatGPTStudio.Options;
 using JeffPires.VisualChatGPTStudio.Utils;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.TextManager.Interop;
 using OpenAI_API.Chat;
 using OpenAI_API.Completions;
 using System;
@@ -93,6 +95,14 @@ namespace JeffPires.VisualChatGPTStudio.Commands
                     return;
                 }
 
+                var type = GetCommandType(selectedText);
+
+                if (type == CommandType.Reset)
+                {
+                    ChatGPT.ResetConversation();
+                    return;
+                }
+
                 firstInteration = true;
                 responseStarted = false;
                 lineLength = 0;
@@ -109,6 +119,22 @@ namespace JeffPires.VisualChatGPTStudio.Commands
 
                 selectedText = docView.TextView.Selection.StreamSelectionSpan.GetText();
 
+                var instructionText = TextFormat.ExtractFirstComment(selectedText);
+
+                IVsTextManager textManager = (IVsTextManager)ServiceProvider.GlobalProvider.GetService(typeof(SVsTextManager));
+                IVsTextView textView;
+                textManager.GetActiveView(1, null, out textView);
+
+                IWpfTextView wpfTextView = GetWpfTextView(textView);
+                string contextText = wpfTextView.TextSnapshot.GetText();
+                
+
+
+
+                // From the selected text try and get the first comments from the selection as a separate string
+
+
+
                 if (string.IsNullOrWhiteSpace(selectedText))
                 {
                     await VS.MessageBox.ShowAsync(Constants.EXTENSION_NAME, "Please select the code.", buttons: Microsoft.VisualStudio.Shell.Interop.OLEMSGBUTTON.OLEMSGBUTTON_OK);
@@ -123,7 +149,7 @@ namespace JeffPires.VisualChatGPTStudio.Commands
                     return;
                 }
 
-                await RequestAsync(selectedText);
+                await RequestAsync(selectedText.Replace(instructionText, string.Empty), contextText, instructionText ?? string.Empty);
             }
             catch (Exception ex)
             {
@@ -133,19 +159,36 @@ namespace JeffPires.VisualChatGPTStudio.Commands
             }
         }
 
+        private IWpfTextView GetWpfTextView(IVsTextView textView)
+        {
+            IWpfTextViewHost textViewHost;
+            IVsUserData userData = textView as IVsUserData;
+            if (userData == null)
+            {
+                throw new InvalidOperationException("Unable to get IVsUserData from text view.");
+            }
+
+            object holder;
+            Guid guid = Microsoft.VisualStudio.Editor.DefGuidList.guidIWpfTextViewHost;
+            userData.GetData(ref guid, out holder);
+            textViewHost = (IWpfTextViewHost)holder;
+
+            return textViewHost.TextView;
+        }
+
         /// <summary>
         /// Requests the specified selected text from ChatGPT
         /// </summary>
         /// <param name="selectedText">The selected text.</param>
-        private async Task RequestAsync(string selectedText)
+        private async Task RequestAsync(string selectedText, string contextText, string instructionText)
         {
             string command = GetCommand(selectedText);
-
+          
             chunkProcessor.Reset();
 
             if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
             {
-                await TerminalWindowCommand.Instance.RequestToWindowAsync(command);
+                await TerminalWindowCommand.Instance.RequestToWindowAsync(command, contextText, instructionText);
 
                 return;
             }
@@ -158,7 +201,7 @@ namespace JeffPires.VisualChatGPTStudio.Commands
             }
             else
             {
-                await ChatGPT.ChatRequestAsync(OptionsGeneral, command, ChatResultHandler, OptionsCommands);
+                await ChatGPT.ChatRequestAsync(OptionsGeneral, command, ChatResultHandler, OptionsCommands.ChatSystemMessage, contextText, instructionText);
             }
 
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -270,14 +313,20 @@ namespace JeffPires.VisualChatGPTStudio.Commands
                 chunkProcessor.CurrentState = ChatResponseState.Summary;
             }
 
-            var chunk = result.Choices.First().Delta.Content;
+            var chunk = result.Choices.First().Delta?.Content;
     
+            if (result.Choices.First().FinishReason != null)
+            {
+                var remarks = chunkProcessor.RemarksSection;
+                docView.TextBuffer?.Insert(position, remarks);
+                position += remarks.Length;
+            }
+
             if (chunk == null)
             {
                 return;
             }
-
-       
+                   
             var state = chunkProcessor.ProcessChunk(chunk);
 
             if (state != prevState )
@@ -298,6 +347,7 @@ namespace JeffPires.VisualChatGPTStudio.Commands
                 }
                 prevState = state;
             }
+
 
         }
 
@@ -398,6 +448,7 @@ namespace JeffPires.VisualChatGPTStudio.Commands
     {
         Replace,
         InsertBefore,
-        InsertAfter
+        InsertAfter,
+        Reset
     }
 }

@@ -14,7 +14,7 @@ namespace JeffPires.VisualChatGPTStudio.Options
         [DisplayName("Complete")]
         [Description("Set the \"Complete\" command")]
         [DefaultValue("Please complete")]
-        public string Complete { get; set; } = "Please complete";
+        public string Complete { get; set; } = "";
 
         [Category("Visual chatGPT Studio")]
         [DisplayName("Add Tests")]

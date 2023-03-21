@@ -13,7 +13,7 @@ namespace JeffPires.VisualChatGPTStudio.Commands
 
         protected override string GetCommand(string selectedText)
         {
-            return TextFormat.FormatForCompleteCommand(OptionsCommands.Complete, selectedText, docView.FilePath);
+            return TextFormat.FormatForCompleteCommand(OptionsCommands.Complete, selectedText.Replace("//", string.Empty), docView.FilePath);
         }
     }
 }

@@ -79,7 +79,8 @@ namespace JeffPires.VisualChatGPTStudio
         /// <param name="request">The request to send to the API.</param>
         /// <param name="resultHandler">The action to take when the result is received.</param>
         /// <returns>A task representing the completion request.</returns>
-        public static async Task ChatRequestAsync(OptionPageGridGeneral options, string request, Action<ChatResult> resultHandler, OptionPageGridCommands commands)
+        public static async Task ChatRequestAsync(OptionPageGridGeneral options, string request, Action<ChatResult> resultHandler, string systemText, 
+            string contextText, string instructionText)
         {
             if (api == null)
             {
@@ -95,8 +96,13 @@ namespace JeffPires.VisualChatGPTStudio
 
             if (!chatmessageCache.GetMessages().Any())
             {
-                chatmessageCache.AppendSystemMessage(commands.ChatSystemMessage);
-                chatmessageCache.AppendUserMessage(commands.ChatSystemMessage);
+                chatmessageCache.AppendSystemMessage(systemText);
+                chatmessageCache.AppendUserMessage(systemText);
+                chatmessageCache.AppendUserMessage($"Here is the full code context:\n ```{contextText}```\n");
+            }
+            if (!string.IsNullOrEmpty(instructionText))
+            {
+                chatmessageCache.AppendUserMessage(instructionText);
             }
 
             chatmessageCache.AppendUserMessage(request);
@@ -117,6 +123,11 @@ namespace JeffPires.VisualChatGPTStudio
            
         }
 
+        public static void ResetConversation()
+        {
+            chatmessageCache.ClearMessages();
+        }
+
         /// <summary>
         ///  Returns an string array of stop sequences
         /// </summary>
@@ -125,6 +136,8 @@ namespace JeffPires.VisualChatGPTStudio
             string[] stopSequenceArray = option.Split(',');
             return stopSequenceArray;
         }
+
+       
 
     }
 }

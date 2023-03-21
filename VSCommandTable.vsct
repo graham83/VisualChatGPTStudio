@@ -95,6 +95,12 @@
           <LocCanonicalName>.VisuallChatGPTStudio.CustomReplace</LocCanonicalName>
         </Strings>
       </Button>
+		<Button guid="VisuallChatGPTStudio" id="ResetChat" priority="0x0800" type="Button">
+			<Strings>
+				<ButtonText>Reset Chat</ButtonText>
+				<LocCanonicalName>.VisuallChatGPTStudio.ResetChat</LocCanonicalName>
+			</Strings>
+		</Button>
       <Button guid="guidVisuallChatGPTStudioPackageCmdSet" id="cmdidTerminalWindowCommand" priority="0x0100" type="Button">
         <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1" />
         <Icon guid="VisuallChatGPTStudioChatGPTIcon" id="chatGPTIcon" />
@@ -140,6 +146,7 @@
     <KeyBinding guid="VisuallChatGPTStudio" id="CustomBefore" mod1="ALT" key1="9" editor="guidVSStd97" />
     <KeyBinding guid="VisuallChatGPTStudio" id="CustomAfter" mod1="ALT" key1="0" editor="guidVSStd97" />
     <KeyBinding guid="VisuallChatGPTStudio" id="CustomReplace" mod1="ALT" key1="R" editor="guidVSStd97" />
+	<KeyBinding guid="VisuallChatGPTStudio" id="ResetChat" mod1="ALT" key1="9" editor="guidVSStd97" />
   </KeyBindings>
 
   <CommandPlacements>
@@ -199,6 +206,10 @@
       <Parent guid="VisuallChatGPTStudio" id="MyGroupForCommands"/>
     </CommandPlacement>
 
+	  
+	<CommandPlacement guid="VisuallChatGPTStudio" id="ResetChat" priority="0x0800" >
+		<Parent guid="VisuallChatGPTStudio" id="MyGroupForCommands"/>
+	</CommandPlacement>
   </CommandPlacements>
 
   <Symbols>
@@ -218,6 +229,7 @@
       <IDSymbol name="CustomBefore" value="0x0800" />
       <IDSymbol name="CustomAfter" value="0x0900" />
       <IDSymbol name="CustomReplace" value="0x0901" />
+	  <IDSymbol name="ResetChat" value="0x0800" />
     </GuidSymbol>
 
     <GuidSymbol value="{8b0b1a54-4655-4dae-8984-022f82a739f2}" name="guidVisuallChatGPTStudioPackageCmdSet">

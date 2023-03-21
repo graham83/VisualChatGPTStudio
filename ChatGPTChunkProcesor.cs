@@ -29,7 +29,7 @@ namespace JeffPires.VisualChatGPTStudio
         internal ChatResponseState CurrentState { get => currentState; set => currentState = value; }
         public string SummarySection { get => summarySection.ToString();}
         public string CodeSection { get => codeSection.ToString(); }
-        public string RemarksSection { get => remarksSection.ToString(); }
+        public string RemarksSection { get => GetFormattedRemarks(); }
 
         internal ChatResponseState ProcessChunk(string chunk)
         {
@@ -95,11 +95,7 @@ namespace JeffPires.VisualChatGPTStudio
 
             if (CurrentState == ChatResponseState.Remarks)
             {
-                var wrappedRemarks = WrapText(remarksSection.ToString(), "/// ");
-                remarksSection.Clear();
-                remarksSection.Append("/// <remarks>\n");
-                remarksSection.Append(wrappedRemarks);
-                remarksSection.Append("/// </remarks>\n");
+                GetFormattedRemarks();
             }
 
             formattedResponse.Append(summarySection);
@@ -107,6 +103,16 @@ namespace JeffPires.VisualChatGPTStudio
             formattedResponse.Append(remarksSection);
 
             return formattedResponse.ToString();
+        }
+
+        public string GetFormattedRemarks()
+        {
+            var wrappedRemarks = WrapText(remarksSection.ToString(), "/// ");
+            remarksSection.Clear();
+            remarksSection.Append("/// <remarks>\n");
+            remarksSection.Append(wrappedRemarks);
+            remarksSection.Append("/// </remarks>\n");
+            return remarksSection.ToString();
         }
 
         public void Reset()

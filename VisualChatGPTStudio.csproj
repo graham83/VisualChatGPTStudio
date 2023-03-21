@@ -65,6 +65,7 @@
     <Compile Include="Commands\FindBugs.cs" />
     <Compile Include="Commands\Explain.cs" />
     <Compile Include="Commands\Optimize.cs" />
+    <Compile Include="Commands\ResetChat.cs" />
     <Compile Include="Options\OptionPageGrid.cs">
       <SubType>Component</SubType>
     </Compile>

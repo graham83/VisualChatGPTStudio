@@ -34,7 +34,7 @@ namespace JeffPires.VisualChatGPTStudio.Commands
         private int lineLength;
         private bool firstInteration;
         private bool responseStarted;
-
+        private ChatResponseState prevState = ChatResponseState.FirstResponse;
         private ChatGPTChunkProcessor chunkProcessor = new ChatGPTChunkProcessor();
 
         /// <summary>
@@ -140,6 +140,8 @@ namespace JeffPires.VisualChatGPTStudio.Commands
         private async Task RequestAsync(string selectedText)
         {
             string command = GetCommand(selectedText);
+
+            chunkProcessor.Reset();
 
             if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
             {
@@ -259,13 +261,13 @@ namespace JeffPires.VisualChatGPTStudio.Commands
         {
             const int LINE_LIMIT = 160;
 
-            if (chunkProcessor.CurrentState == State.FirstResponse)
+            if (chunkProcessor.CurrentState == ChatResponseState.FirstResponse)
             {
                 _ = VS.StatusBar.ShowProgressAsync("Receiving chatGPT response", 2, 2);
 
                 PreFormatExistingCode();
 
-                chunkProcessor.CurrentState = State.Summary;
+                chunkProcessor.CurrentState = ChatResponseState.Summary;
             }
 
             var chunk = result.Choices.First().Delta.Content;
@@ -275,15 +277,27 @@ namespace JeffPires.VisualChatGPTStudio.Commands
                 return;
             }
 
-            chunkProcessor.ProcessChunk(chunk);
+       
+            var state = chunkProcessor.ProcessChunk(chunk);
 
-            //// Adding raw code
-            //docView.TextBuffer?.Insert(position, resultText);
+            if (state != prevState )
+            {
+                if (state == ChatResponseState.Code)
+                {
+                    docView.TextBuffer?.Insert(position, chunkProcessor.SummarySection);
+                    position += chunkProcessor.SummarySection.Length;
+                }
 
-            //position += resultText.Length;
+                if (state == ChatResponseState.Remarks)
+                {
+                    var code = chunkProcessor.CodeSection;
 
-            //lineLength += resultText.Length;
+                    docView.TextBuffer?.Insert(position, code);
 
+                    position += code.Length;
+                }
+                prevState = state;
+            }
 
         }
 

@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 using static System.Windows.Forms.AxHost;
 
 namespace JeffPires.VisualChatGPTStudio
 {
-    public enum State { 
+    public enum ChatResponseState { 
         FirstResponse, 
         Summary, 
         Code, 
@@ -17,77 +18,106 @@ namespace JeffPires.VisualChatGPTStudio
     internal class ChatGPTChunkProcessor
     {
         private StringBuilder formattedResponse = new StringBuilder();
-        private StringBuilder currentChunk = new StringBuilder();
+        private StringBuilder currentSectionText = new StringBuilder();
 
-        private State currentState = State.FirstResponse;
+        private StringBuilder summarySection = new StringBuilder();
+        private StringBuilder codeSection = new StringBuilder();
+        private StringBuilder remarksSection = new StringBuilder();
 
-        internal State CurrentState { get => currentState; set => currentState = value; }
+        private ChatResponseState currentState = ChatResponseState.FirstResponse;
 
-        internal void ProcessChunk(string chunk)
+        internal ChatResponseState CurrentState { get => currentState; set => currentState = value; }
+        public string SummarySection { get => summarySection.ToString();}
+        public string CodeSection { get => codeSection.ToString(); }
+        public string RemarksSection { get => remarksSection.ToString(); }
+
+        internal ChatResponseState ProcessChunk(string chunk)
         {
-            currentChunk.Append(chunk);
-            string text = currentChunk.ToString();
-            string[] tokens = text.Split(new[] { "```" }, StringSplitOptions.None);
-           
-            for (int i = 0; i < tokens.Length; i++)
+
+            currentSectionText.Append(chunk);
+            string text = currentSectionText.ToString();
+            int delimiterIndex = text.IndexOf("```");
+
+            if (CurrentState == ChatResponseState.Summary)
             {
-                switch (CurrentState)
+                
+                if (delimiterIndex >= 0) // Found <code> tag
                 {
-                    case State.Summary:
-                        formattedResponse.Clear();
-                        if (i + 1 < tokens.Length && tokens[i + 1] == "") // Found <code> tag
-                        {
-                            formattedResponse.Append("/// <summary>\n");
-                            formattedResponse.Append(WrapText(tokens[i], "/// "));
-                            formattedResponse.Append("/// </summary>\n");
-                            CurrentState = State.Code;
-                            i++; // Skip the empty token after <code>
-                        }
-                        else
-                        {
-                            formattedResponse.Append(WrapText(tokens[i], "/// "));
-                        }
-                        break;
-
-                    case State.Code:
-                        formattedResponse.Append(tokens[i]);
-                        if (i + 1 < tokens.Length && tokens[i + 1] == "") // Found </code> tag
-                        {
-                            CurrentState = State.Remarks;
-                            i++; // Skip the empty token after </code>
-                        }
-                        break;
-
-                    case State.Remarks:
-                        if (i == tokens.Length - 1) // Last token in the current chunk
-                        {
-                            currentChunk.Clear();
-                            currentChunk.Append(tokens[i]);
-                        }
-                        else
-                        {
-                            formattedResponse.Append("/// <remarks>\n");
-                            formattedResponse.Append(WrapText(tokens[i], "/// "));
-                            formattedResponse.Append("/// </remarks>\n");
-                            CurrentState = State.Summary;
-                        }
-                        break;
+                    var summartyText = text.Substring(0, delimiterIndex);
+                    
+                    var wrappedSummary = WrapText(summartyText, "/// ");
+                    summarySection.Clear();
+                    summarySection.Append("/// <summary>\n");
+                    summarySection.Append(wrappedSummary);
+                    summarySection.Append("/// </summary>\n");
+                    currentSectionText.Clear();
+                    CurrentState = ChatResponseState.Code;
+                }
+                else
+                {
+                    summarySection.Append(chunk);
                 }
             }
+            else if (CurrentState == ChatResponseState.Code)
+            {
+                if (delimiterIndex >= 0) // Found </code> tag
+                {
+                    var codeText = text.Substring(0, delimiterIndex);
+                    codeSection.Clear();
+                    codeSection.Append(codeText);
+                    currentSectionText.Clear();
+                    currentSectionText.Append(text.Substring(delimiterIndex + 3));
+                    CurrentState = ChatResponseState.Remarks;
+                }
+                else
+                {
+                    codeSection.Append(chunk);
+                }
+            }
+            else if (CurrentState == ChatResponseState.Remarks)
+            {
+                remarksSection.Append(chunk);   
+            }
+
+            return CurrentState;
         }
 
         public string GetFormattedResponse()
         {
-            if (CurrentState == State.Remarks)
+            if (CurrentState == ChatResponseState.Summary)
             {
-                formattedResponse.Append("/// <remarks>\n");
-                formattedResponse.Append(WrapText(currentChunk.ToString(), "/// "));
-                formattedResponse.Append("/// </remarks>\n");
+                var wrappedSummary = WrapText(summarySection.ToString(), "/// ");
+                summarySection.Clear();
+                summarySection.Append("/// <summary>\n");
+                remarksSection.Append(wrappedSummary);
+                remarksSection.Append("/// </summary>\n");
             }
+
+            if (CurrentState == ChatResponseState.Remarks)
+            {
+                var wrappedRemarks = WrapText(remarksSection.ToString(), "/// ");
+                remarksSection.Clear();
+                remarksSection.Append("/// <remarks>\n");
+                remarksSection.Append(wrappedRemarks);
+                remarksSection.Append("/// </remarks>\n");
+            }
+
+            formattedResponse.Append(summarySection);
+            formattedResponse.Append(codeSection);
+            formattedResponse.Append(remarksSection);
 
             return formattedResponse.ToString();
         }
 
+        public void Reset()
+        {
+            formattedResponse.Clear();
+            currentSectionText.Clear();
+            summarySection.Clear();
+            codeSection.Clear();
+            remarksSection.Clear();
+            CurrentState = ChatResponseState.FirstResponse;
+        }
         private string WrapText(string text, string prefix)
         {
             StringBuilder wrappedText = new StringBuilder();
@@ -102,5 +132,7 @@ namespace JeffPires.VisualChatGPTStudio
 
             return wrappedText.ToString();
         }
+
+
     }
 }

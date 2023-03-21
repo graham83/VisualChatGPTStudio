@@ -4,13 +4,18 @@ using JeffPires.VisualChatGPTStudio.Options;
 using JeffPires.VisualChatGPTStudio.Utils;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
+using OpenAI_API.Chat;
 using OpenAI_API.Completions;
 using System;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Constants = JeffPires.VisualChatGPTStudio.Utils.Constants;
 using Span = Microsoft.VisualStudio.Text.Span;
+using System.Text.RegularExpressions;
+
+
 
 namespace JeffPires.VisualChatGPTStudio.Commands
 {
@@ -29,6 +34,8 @@ namespace JeffPires.VisualChatGPTStudio.Commands
         private int lineLength;
         private bool firstInteration;
         private bool responseStarted;
+
+        private ChatGPTChunkProcessor chunkProcessor = new ChatGPTChunkProcessor();
 
         /// <summary>
         /// Gets the OptionsGeneral property of the VisuallChatGPTStudioPackage.
@@ -143,7 +150,14 @@ namespace JeffPires.VisualChatGPTStudio.Commands
 
             await VS.StatusBar.ShowProgressAsync(Constants.MESSAGE_WAITING_CHATGPT, 1, 2);
 
-            await ChatGPT.RequestAsync(OptionsGeneral, command, ResultHandler);
+            if (OptionsGeneral.Model != ModelLanguageEnum.ChatGpt)
+            {
+                await ChatGPT.CompletionRequestAsync(OptionsGeneral, command, ResultHandler);
+            }
+            else
+            {
+                await ChatGPT.ChatRequestAsync(OptionsGeneral, command, ChatResultHandler, OptionsCommands);
+            }
 
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
@@ -236,6 +250,88 @@ namespace JeffPires.VisualChatGPTStudio.Commands
             }
         }
 
+
+        /// <summary>
+        /// Chat results handler.
+        /// </summary>
+        /// <param name="result">The result.</param>
+        private void ChatResultHandler(ChatResult result)
+        {
+            const int LINE_LIMIT = 160;
+
+            if (chunkProcessor.CurrentState == State.FirstResponse)
+            {
+                _ = VS.StatusBar.ShowProgressAsync("Receiving chatGPT response", 2, 2);
+
+                PreFormatExistingCode();
+
+                chunkProcessor.CurrentState = State.Summary;
+            }
+
+            var chunk = result.Choices.First().Delta.Content;
+    
+            if (chunk == null)
+            {
+                return;
+            }
+
+            chunkProcessor.ProcessChunk(chunk);
+
+            //// Adding raw code
+            //docView.TextBuffer?.Insert(position, resultText);
+
+            //position += resultText.Length;
+
+            //lineLength += resultText.Length;
+
+
+        }
+
+        private void PreFormatExistingCode()
+        {
+            CommandType commandType = GetCommandType(selectedText);
+
+            if (commandType == CommandType.Erase)
+            {
+                position = positionStart;
+
+                //Erase current code
+                _ = docView.TextBuffer?.Replace(new Span(position, docView.TextView.Selection.StreamSelectionSpan.GetText().Length), String.Empty);
+            }
+            else if (commandType == CommandType.InsertBefore)
+            {
+                position = positionStart;
+
+                InsertANewLine(false);
+            }
+            else
+            {
+                position = positionEnd;
+
+                InsertANewLine(true);
+            }
+        }
+   
+        private async Task CoolDeleteEffectAsync(ITextBuffer textBuffer, int position, string text)
+        {
+            var words = text.Split(' ');
+
+            for (int i = words.Length - 1; i >= 0; i--)
+            {
+                string word = words[i];
+                int wordLength = word.Length;
+
+                // Delete the word
+                textBuffer.Replace(new Span(position, wordLength), String.Empty);
+
+                // Update the position for the next word
+                position -= (wordLength + 1); // Add 1 for the space between words
+
+                // Introduce a delay between deleting words
+                await Task.Delay(100); // You can adjust this delay as needed for the desired effect
+            }
+        }
+
         /// <summary>
         /// Inserts a new line into the document and optionally moves the position to the start of the next line.
         /// </summary>
@@ -266,6 +362,7 @@ namespace JeffPires.VisualChatGPTStudio.Commands
             docView.TextBuffer?.Insert(position, "//");
             position += 2;
         }
+
 
         /// <summary>
         /// Check If Selected Two Or More Methods

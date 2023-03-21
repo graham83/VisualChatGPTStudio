@@ -79,6 +79,7 @@ namespace JeffPires.VisualChatGPTStudio.Options
         TextBabbage001,
         TextAda001,
         CodeDavinci,
-        CodeCushman
+        CodeCushman,
+        ChatGpt
     }
 }

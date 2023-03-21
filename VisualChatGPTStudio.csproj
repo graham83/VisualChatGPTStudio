@@ -53,6 +53,10 @@
     <Compile Include="Commands\CustomReplace.cs" />
     <Compile Include="Commands\CustomBefore.cs" />
     <Compile Include="Utils\ChatGPT.cs" />
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="ChatCache.cs" />
+    <Compile Include="ChatGPT.cs" />
+    <Compile Include="ChatGPTChunkProcesor.cs" />
     <Compile Include="Commands\AddSummary.cs" />
     <Compile Include="Commands\BaseChatGPTCommand.cs" />
     <Compile Include="Commands\AskAnything.cs" />

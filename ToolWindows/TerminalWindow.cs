@@ -38,18 +38,18 @@ namespace JeffPires.VisualChatGPTStudio.ToolWindows
         /// </summary>
         /// <param name="options">The options.</param>
         /// <param name="package">The package.</param>
-        public void SetTerminalWindowProperties(OptionPageGridGeneral options, Package package)
+        public void SetTerminalWindowProperties(OptionPageGridGeneral options, OptionPageGridCommands commands, Package package)
         {
-            ((TerminalWindowControl)this.Content).StartControl(options, package);
+            ((TerminalWindowControl)this.Content).StartControl(options, commands, package);
         }
 
         /// <summary>
         /// Sends a request to the ChatGPT window.
         /// </summary>
         /// <param name="command">The command to send to the ChatGPT window.</param>
-        public async Task RequestToWindowAsync(string command)
+        public async Task RequestToWindowAsync(string command, string context, string instruction)
         {
-            await ((TerminalWindowControl)this.Content).RequestToWindowAsync(command);
+            await ((TerminalWindowControl)this.Content).RequestToWindowAsync(command, context, instruction);
         }
     }
 }

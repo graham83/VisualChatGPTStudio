@@ -119,15 +119,10 @@ namespace JeffPires.VisualChatGPTStudio.Commands
 
                 selectedText = docView.TextView.Selection.StreamSelectionSpan.GetText();
 
+                // TODO: use prompt window or snippet input
                 var instructionText = TextFormat.ExtractFirstComment(selectedText);
 
-                IVsTextManager textManager = (IVsTextManager)ServiceProvider.GlobalProvider.GetService(typeof(SVsTextManager));
-                IVsTextView textView;
-                textManager.GetActiveView(1, null, out textView);
-
-                IWpfTextView wpfTextView = GetWpfTextView(textView);
-                string contextText = wpfTextView.TextSnapshot.GetText();
-                
+                var contextText = docView.Document.TextBuffer.GetTextDocument().TextBuffer.CurrentSnapshot.GetText();
 
                 if (string.IsNullOrWhiteSpace(selectedText))
                 {

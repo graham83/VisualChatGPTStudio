@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>netstandard2.0</TargetFrameworks>
+        <LangVersion>8</LangVersion>
+        <Nullable>enable</Nullable>
+        <AssemblyName>AI.Dev.OpenAI.GPT</AssemblyName>
+        <RootNamespace>AI.Dev.OpenAI.GPT</RootNamespace>
+        <Authors>Devis Lucato</Authors>
+        <PackageProjectUrl>https://github.com/dluc/openai-tools</PackageProjectUrl>
+        <PackageLicenseExpression>CC0-1.0</PackageLicenseExpression>
+        <RepositoryUrl>https://github.com/dluc/openai-tools</RepositoryUrl>
+        <PackageTags>OpenAI GPT GPT3 Tokenizer Tokens AI</PackageTags>
+        <Title>OpenAI GPT utils</Title>
+        <Description>OpenAI GPT utils, e.g. GPT3 Tokenizer</Description>
+        <Copyright>Devis Lucato</Copyright>
+        <PackageVersion>1.0.2</PackageVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="Settings\encoder.json" />
+        <EmbeddedResource Include="Settings\vocab.bpe" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="System.Text.Json" Version="7.0.2" />
+    </ItemGroup>
+
+</Project>

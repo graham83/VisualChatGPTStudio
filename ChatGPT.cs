@@ -96,7 +96,8 @@ namespace JeffPires.VisualChatGPTStudio
 
             if (!chatmessageCache.GetMessages().Any())
             {
-                chatmessageCache.AppendSystemMessage(systemText);
+                // Currently recommend for GPT Turbo that System message does not weight the conversation
+                //chatmessageCache.AppendSystemMessage(systemText);
                 chatmessageCache.AppendUserMessage(systemText);
                 chatmessageCache.AppendUserMessage($"Here is the full code context:\n ```{contextText}```\n");
             }
@@ -120,6 +121,7 @@ namespace JeffPires.VisualChatGPTStudio
             };
 
             await api.Chat.StreamChatAsync(chatRequest, resultHandler);
+   
            
         }
 

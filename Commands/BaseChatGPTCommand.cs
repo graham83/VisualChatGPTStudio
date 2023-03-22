@@ -129,12 +129,6 @@ namespace JeffPires.VisualChatGPTStudio.Commands
                 string contextText = wpfTextView.TextSnapshot.GetText();
                 
 
-
-
-                // From the selected text try and get the first comments from the selection as a separate string
-
-
-
                 if (string.IsNullOrWhiteSpace(selectedText))
                 {
                     await VS.MessageBox.ShowAsync(Constants.EXTENSION_NAME, "Please select the code.", buttons: Microsoft.VisualStudio.Shell.Interop.OLEMSGBUTTON.OLEMSGBUTTON_OK);

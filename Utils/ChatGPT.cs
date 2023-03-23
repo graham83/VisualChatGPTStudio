@@ -65,12 +65,12 @@ namespace JeffPires.VisualChatGPTStudio.Utils
         /// Requests a chat request from the OpenAI API using the given options.
         /// </summary>
         /// <param name="options">The options to use for the request.</param>
-        /// <param name="request">The derived request command to send to the API.</param>
+        /// <param name="command">The derived request command to send to the API.</param>
         /// <param name="resultHandler">The action to take when the result is received.</param>
         /// <param name="contextText">Initial context code provided from the editor.</param>
         /// <param name="instructionText">Additional instructions added to the conversation from code comments.</param>
         /// <returns>A task representing the chat request.</returns>
-        public static async Task ChatRequestAsync(OptionPageGridGeneral options, string request, Action<ChatResult> resultHandler,
+        public static async Task ChatRequestAsync(OptionPageGridGeneral options, string command, Action<ChatResult> resultHandler,
             string contextText, string instructionText)
         {
             CreateApiHandler(options.ApiKey);
@@ -94,9 +94,10 @@ namespace JeffPires.VisualChatGPTStudio.Utils
             {
                 chatmessageCache.AppendUserMessage(instructionText);
             }
-
-            chatmessageCache.AppendUserMessage(request);
-
+            if (!string.IsNullOrEmpty(command))
+            {
+                chatmessageCache.AppendUserMessage(command);
+            }
             var chatRequest = new ChatRequest()
             {
                 Model = model,

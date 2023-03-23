@@ -16,8 +16,8 @@ using System.Windows.Input;
 using Constants = JeffPires.VisualChatGPTStudio.Utils.Constants;
 using Span = Microsoft.VisualStudio.Text.Span;
 using System.Text.RegularExpressions;
-
-
+using AI.Dev.OpenAI.GPT;
+using System.Windows.Controls;
 
 namespace JeffPires.VisualChatGPTStudio.Commands
 {
@@ -124,6 +124,22 @@ namespace JeffPires.VisualChatGPTStudio.Commands
 
                 var contextText = docView.Document.TextBuffer.GetTextDocument().TextBuffer.CurrentSnapshot.GetText();
 
+                var contextTokens = GPT3Tokenizer.Encode(contextText);
+
+                var contextLength = contextTokens.Count;
+
+                // Trim down context. 
+                // TODO: Smart context selection e.g. Remove new lines, select context around the current code selection etc
+                if (contextLength > Constants.MAX_CONTEXT_LENGTH)
+                {
+                    var contextLengthPercentage = (contextLength - Constants.MAX_CONTEXT_LENGTH) / (float)Constants.MAX_CONTEXT_LENGTH;
+
+                    // Remove the equivalent percentage of text from contextText string
+                    var contextTextLengthToRemove = (int)(contextText.Length * contextLengthPercentage);
+
+                    contextText = contextText.Substring(contextTextLengthToRemove);
+                }              
+
                 if (string.IsNullOrWhiteSpace(selectedText))
                 {
                     await VS.MessageBox.ShowAsync(Constants.EXTENSION_NAME, "Please select the code.", buttons: Microsoft.VisualStudio.Shell.Interop.OLEMSGBUTTON.OLEMSGBUTTON_OK);
@@ -181,7 +197,7 @@ namespace JeffPires.VisualChatGPTStudio.Commands
             }
             else
             {
-                await ChatGPT.ChatRequestAsync(OptionsGeneral, command, ChatResultHandler, contextText, instructionText);
+                await ChatGPT.ChatRequestAsync(OptionsGeneral, CleanCommand(command), ChatResultHandler, contextText, instructionText);
             }
 
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -197,6 +213,13 @@ namespace JeffPires.VisualChatGPTStudio.Commands
             }
         }
 
+        private string CleanCommand(string text)
+        {
+            text = text.Replace("\n", string.Empty);
+            text = text.Replace("\r", string.Empty);
+            text = text.Replace(@"\\", string.Empty);
+            return text;
+        }
         /// <summary>
         /// Results handler.
         /// </summary>

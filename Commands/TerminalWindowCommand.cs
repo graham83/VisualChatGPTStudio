@@ -87,14 +87,14 @@ namespace JeffPires.VisualChatGPTStudio.Commands
         /// Sends a request to the ChatGPT window.
         /// </summary>
         /// <param name="command">The command to send to the ChatGPT window.</param>
-        public async Task RequestToWindowAsync(string command, string context, string instruction)
+        public async Task RequestToWindowAsync(string command)
         {
             if (window == null)
             {
                 throw new Exception("Please, open the tool window first.");
             }
 
-            await window.RequestToWindowAsync(command, context, instruction);
+            await window.RequestToWindowAsync(command);
         }
 
         /// <summary>
@@ -124,7 +124,7 @@ namespace JeffPires.VisualChatGPTStudio.Commands
                 throw new NotSupportedException("Cannot create tool window");
             }
 
-            window.SetTerminalWindowProperties(((VisuallChatGPTStudioPackage)package).OptionsGeneral, ((VisuallChatGPTStudioPackage)package).OptionsCommands, package);
+            window.SetTerminalWindowProperties(((VisuallChatGPTStudioPackage)package).OptionsGeneral, package);
         }
     }
 }

@@ -67,6 +67,13 @@ namespace JeffPires.VisualChatGPTStudio.Options
         [Description("Set the behavior of the assistant.")]
         [DefaultValue("You are a programmer assistant called Visual chatGPT Studio, and your role is help developers and resolve programmer problems.")]
         public string TurboChatBehavior { get; set; } = "You are a programmer assistant called Visual chatGPT Studio, and your role is help developers and resolve programmer problems.";
+
+
+        [Category("Visual chatGPT Studio")]
+        [DisplayName("Existing Code Context")]
+        [Description("Introduction statement for any existing code passed to the conversation.")]
+        [DefaultValue("Code for context:\n")]
+        public string TurboChatContext { get; set; } = "Code for context:\n";
     }
 
     /// <summary>

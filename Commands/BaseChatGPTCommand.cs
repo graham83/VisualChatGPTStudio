@@ -148,23 +148,6 @@ namespace JeffPires.VisualChatGPTStudio.Commands
             }
         }
 
-        private IWpfTextView GetWpfTextView(IVsTextView textView)
-        {
-            IWpfTextViewHost textViewHost;
-            IVsUserData userData = textView as IVsUserData;
-            if (userData == null)
-            {
-                throw new InvalidOperationException("Unable to get IVsUserData from text view.");
-            }
-
-            object holder;
-            Guid guid = Microsoft.VisualStudio.Editor.DefGuidList.guidIWpfTextViewHost;
-            userData.GetData(ref guid, out holder);
-            textViewHost = (IWpfTextViewHost)holder;
-
-            return textViewHost.TextView;
-        }
-
         /// <summary>
         /// Requests the specified selected text from ChatGPT
         /// </summary>
@@ -177,7 +160,7 @@ namespace JeffPires.VisualChatGPTStudio.Commands
 
             if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
             {
-                await TerminalWindowCommand.Instance.RequestToWindowAsync(command, contextText, instructionText);
+                await TerminalWindowCommand.Instance.RequestToWindowAsync($"{command}\n{instructionText}");
 
                 return;
             }
@@ -186,11 +169,11 @@ namespace JeffPires.VisualChatGPTStudio.Commands
 
             if (OptionsGeneral.Model != ModelLanguageEnum.ChatGpt)
             {
-                await ChatGPT.CompletionRequestAsync(OptionsGeneral, command, ResultHandler);
+                await ChatGPT.RequestAsync(OptionsGeneral, command, ResultHandler);
             }
             else
             {
-                await ChatGPT.ChatRequestAsync(OptionsGeneral, command, ChatResultHandler, OptionsCommands.ChatSystemMessage, contextText, instructionText);
+                await ChatGPT.ChatRequestAsync(OptionsGeneral, command, ChatResultHandler, contextText, instructionText);
             }
 
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -223,25 +206,7 @@ namespace JeffPires.VisualChatGPTStudio.Commands
 
                     CommandType commandType = GetCommandType(selectedText);
 
-                    if (commandType == CommandType.Replace)
-                    {
-                        position = positionStart;
-
-                        //Erase current code
-                        _ = docView.TextBuffer?.Replace(new Span(position, docView.TextView.Selection.StreamSelectionSpan.GetText().Length), String.Empty);
-                    }
-                    else if (commandType == CommandType.InsertBefore)
-                    {
-                        position = positionStart;
-
-                        InsertANewLine(false);
-                    }
-                    else
-                    {
-                        position = positionEnd;
-
-                        InsertANewLine(true);
-                    }
+                    PreFormatExistingCode();
 
                     if (typeof(TCommand) == typeof(Explain) || typeof(TCommand) == typeof(FindBugs))
                     {
@@ -291,8 +256,6 @@ namespace JeffPires.VisualChatGPTStudio.Commands
         /// <param name="result">The result.</param>
         private void ChatResultHandler(ChatResult result)
         {
-            const int LINE_LIMIT = 160;
-
             if (chunkProcessor.CurrentState == ChatResponseState.FirstResponse)
             {
                 _ = VS.StatusBar.ShowProgressAsync("Receiving chatGPT response", 2, 2);
@@ -336,15 +299,13 @@ namespace JeffPires.VisualChatGPTStudio.Commands
                 }
                 prevState = state;
             }
-
-
         }
 
         private void PreFormatExistingCode()
         {
             CommandType commandType = GetCommandType(selectedText);
 
-            if (commandType == CommandType.Erase)
+            if (commandType == CommandType.Replace)
             {
                 position = positionStart;
 

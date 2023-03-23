@@ -4,6 +4,7 @@ using OpenAI_API.Chat;
 using OpenAI_API.Completions;
 using OpenAI_API.Models;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace JeffPires.VisualChatGPTStudio.Utils
@@ -14,6 +15,7 @@ namespace JeffPires.VisualChatGPTStudio.Utils
     static class ChatGPT
     {
         private static OpenAIAPI api;
+        private static ChatMessageCache chatmessageCache = new ChatMessageCache();
 
         /// <summary>
         /// Requests a completion from the OpenAI API using the given options.
@@ -60,6 +62,58 @@ namespace JeffPires.VisualChatGPTStudio.Utils
         }
 
         /// <summary>
+        /// Requests a chat request from the OpenAI API using the given options.
+        /// </summary>
+        /// <param name="options">The options to use for the request.</param>
+        /// <param name="request">The derived request command to send to the API.</param>
+        /// <param name="resultHandler">The action to take when the result is received.</param>
+        /// <param name="contextText">Initial context code provided from the editor.</param>
+        /// <param name="instructionText">Additional instructions added to the conversation from code comments.</param>
+        /// <returns>A task representing the chat request.</returns>
+        public static async Task ChatRequestAsync(OptionPageGridGeneral options, string request, Action<ChatResult> resultHandler,
+            string contextText, string instructionText)
+        {
+            CreateApiHandler(options.ApiKey);
+
+            Model model = Model.ChatGPTTurbo;
+
+            if (!chatmessageCache.GetMessages().Any())
+            {
+                if (!string.IsNullOrEmpty(options.TurboChatBehavior))
+                {
+                    // Current OpenAI documentation states that system message does carry much weight in the conversation and
+                    // instead to add it as a normal user message: https://platform.openai.com/docs/guides/chat/instructing-chat-models
+                    chatmessageCache.AppendUserMessage(options.TurboChatBehavior);
+                }
+                if (!string.IsNullOrEmpty(contextText))
+                {
+                    chatmessageCache.AppendUserMessage($"{options.TurboChatContext}```{contextText}```\n");
+                }
+            }
+            if (!string.IsNullOrEmpty(instructionText))
+            {
+                chatmessageCache.AppendUserMessage(instructionText);
+            }
+
+            chatmessageCache.AppendUserMessage(request);
+
+            var chatRequest = new ChatRequest()
+            {
+                Model = model,
+                Messages = chatmessageCache.GetMessages(),
+                MaxTokens = options.MaxTokens,
+                Temperature = options.Temperature,
+                PresencePenalty = options.PresencePenalty,
+                FrequencyPenalty = options.FrequencyPenalty,
+                TopP = options.TopP,
+                MultipleStopSequences = GetStopSequenceArray(options.StopSequences)
+            };
+
+            await api.Chat.StreamChatAsync(chatRequest, resultHandler);
+
+        }
+
+        /// <summary>
         /// Creates a new conversation and appends a system message with the specified TurboChatBehavior.
         /// </summary>
         /// <param name="options">The options to use for the conversation.</param>
@@ -73,6 +127,14 @@ namespace JeffPires.VisualChatGPTStudio.Utils
             chat.AppendSystemMessage(options.TurboChatBehavior);
 
             return chat;
+        }
+
+        /// <summary>
+        /// Reset the current conversation.
+        /// </summary>
+        public static void ResetConversation()
+        {
+            chatmessageCache.ClearMessages();
         }
 
         /// <summary>

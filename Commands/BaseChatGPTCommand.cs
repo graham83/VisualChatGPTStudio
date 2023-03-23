@@ -122,23 +122,8 @@ namespace JeffPires.VisualChatGPTStudio.Commands
                 // TODO: use prompt window or snippet input
                 var instructionText = TextFormat.ExtractFirstComment(selectedText);
 
-                var contextText = docView.Document.TextBuffer.GetTextDocument().TextBuffer.CurrentSnapshot.GetText();
-
-                var contextTokens = GPT3Tokenizer.Encode(contextText);
-
-                var contextLength = contextTokens.Count;
-
-                // Trim down context. 
-                // TODO: Smart context selection e.g. Remove new lines, select context around the current code selection etc
-                if (contextLength > Constants.MAX_CONTEXT_LENGTH)
-                {
-                    var contextLengthPercentage = (contextLength - Constants.MAX_CONTEXT_LENGTH) / (float)Constants.MAX_CONTEXT_LENGTH;
-
-                    // Remove the equivalent percentage of text from contextText string
-                    var contextTextLengthToRemove = (int)(contextText.Length * contextLengthPercentage);
-
-                    contextText = contextText.Substring(contextTextLengthToRemove);
-                }              
+                // TODO: Use Roslyn to parse the text and remove formatting which takes up a lot of tokens.
+                //string contextText = GetContextText();
 
                 if (string.IsNullOrWhiteSpace(selectedText))
                 {
@@ -154,7 +139,7 @@ namespace JeffPires.VisualChatGPTStudio.Commands
                     return;
                 }
 
-                await RequestAsync(selectedText.Replace(instructionText, string.Empty), contextText, instructionText ?? string.Empty);
+                await RequestAsync(selectedText.Replace(instructionText, string.Empty), "", instructionText ?? string.Empty);
             }
             catch (Exception ex)
             {
@@ -162,6 +147,33 @@ namespace JeffPires.VisualChatGPTStudio.Commands
 
                 await VS.MessageBox.ShowAsync(Constants.EXTENSION_NAME, ex.Message, Microsoft.VisualStudio.Shell.Interop.OLEMSGICON.OLEMSGICON_WARNING, Microsoft.VisualStudio.Shell.Interop.OLEMSGBUTTON.OLEMSGBUTTON_OK);
             }
+        }
+
+        private string GetContextText()
+        {
+            var contextText = docView.Document.TextBuffer.GetTextDocument().TextBuffer.CurrentSnapshot.GetText();
+
+            // Remove indents from the contextText
+            contextText = TextFormat.FormatSelection(contextText);
+
+            var contextTokens = GPT3Tokenizer.Encode(contextText);
+
+            var contextLength = contextTokens.Count;
+
+            // Trim down context. 
+            // TODO: Smart context selection e.g. Remove new lines, select context around the current code selection etc
+            if (contextLength > Constants.MAX_CONTEXT_LENGTH)
+            {
+                var contextLengthPercentage = (float)(contextLength - Constants.MAX_CONTEXT_LENGTH) / contextLength;
+
+                // Calculate the length of text to remove from contextText string
+                var contextTextLengthToRemove = (int)(contextText.Length * contextLengthPercentage);
+
+                // Remove the calculated length of text from the beginning of the contextText string
+                contextText = contextText.Substring(contextTextLengthToRemove);
+            }
+
+            return contextText;
         }
 
         /// <summary>

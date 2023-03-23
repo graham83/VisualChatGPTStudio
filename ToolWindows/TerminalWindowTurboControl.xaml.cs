@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.Shell;
 using OpenAI_API.Chat;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -158,6 +159,26 @@ namespace JeffPires.VisualChatGPTStudio.ToolWindows
             chatItems = new();
 
             chatList.ItemsSource = chatItems;
+        }
+
+
+        /// <summary>
+        /// Sends a request to the ChatGPT window and handles the response.
+        /// </summary>
+        /// <param name="command">The command to send to the ChatGPT window.</param>
+        public async Task RequestToWindowAsync(string command)
+        {
+            try
+            {
+                txtRequest.Text = command;
+                SendRequestAsync(this, null);
+            }
+            catch (Exception ex)
+            {
+                await VS.StatusBar.ShowProgressAsync(ex.Message, 2, 2);
+
+                MessageBox.Show(ex.Message, Constants.EXTENSION_NAME, MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         #endregion Methods                    

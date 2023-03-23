@@ -26,6 +26,12 @@ namespace JeffPires.VisualChatGPTStudio.Commands
         /// </summary>
         private readonly AsyncPackage package;
 
+
+        /// <summary>
+        /// This field holds a reference to the TerminalWindowTurbo object.
+        /// </summary>
+        private static ToolWindowPane window;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TerminalWindowTurboCommand"/> class.
         /// Adds our command handlers for menu (commands must exist in the command table file)
@@ -79,6 +85,20 @@ namespace JeffPires.VisualChatGPTStudio.Commands
         }
 
         /// <summary>
+        /// Sends a request to the ChatGPT window.
+        /// </summary>
+        /// <param name="command">The command to send to the ChatGPT window.</param>
+        public async Task RequestToWindowAsync(string command)
+        {
+            if (window == null)
+            {
+                throw new Exception("Please, open the tool window first.");
+            }
+
+            await ((TerminalWindowTurbo)window).RequestToWindowAsync(command);
+        }
+
+        /// <summary>
         /// Shows the tool window when the menu item is clicked.
         /// </summary>
         /// <param name="sender">The event sender.</param>
@@ -98,7 +118,7 @@ namespace JeffPires.VisualChatGPTStudio.Commands
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         private static async Task InitializeToolWindowAsync(AsyncPackage package)
         {
-            ToolWindowPane window = await package.ShowToolWindowAsync(typeof(TerminalWindowTurbo), 0, true, package.DisposalToken);
+            window = await package.ShowToolWindowAsync(typeof(TerminalWindowTurbo), 0, true, package.DisposalToken);
 
             if ((null == window) || (null == window.Frame))
             {

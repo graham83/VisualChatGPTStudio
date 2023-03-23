@@ -1,6 +1,7 @@
 ﻿using JeffPires.VisualChatGPTStudio.Options;
 using Microsoft.VisualStudio.Shell;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace JeffPires.VisualChatGPTStudio.ToolWindows
 {
@@ -39,6 +40,15 @@ namespace JeffPires.VisualChatGPTStudio.ToolWindows
         public void SetTerminalWindowProperties(OptionPageGridGeneral options, Package package)
         {
             ((TerminalWindowTurboControl)this.Content).StartControl(options, package);
+        }
+
+        /// <summary>
+        /// Sends a request to the ChatGPT window.
+        /// </summary>
+        /// <param name="command">The command to send to the ChatGPT window.</param>
+        public async Task RequestToWindowAsync(string command)
+        {
+            await ((TerminalWindowTurboControl)this.Content).RequestToWindowAsync(command);
         }
     }
 }
